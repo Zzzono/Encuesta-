@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Encuesta Tip Top</title>
+<style>
+:root{--bg:#f0ebf8;--card:#fff;--tx:#202124;--mut:#5f6368;--ac:#673ab7;--bd:#dadce0;--ok:#188038;--er:#d93025;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#1b1a22;--card:#272630;--tx:#e8eaed;--mut:#9aa0a6;--ac:#b39ddb;--bd:#45444f;--ok:#81c995;--er:#f28b82;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:680px;margin:0 auto;padding:20px 16px 60px}
+.wrap.wide{max-width:1100px}
+header{background:var(--card);border:1px solid var(--bd);border-top:10px solid var(--ac);border-radius:10px;padding:22px 20px;margin-bottom:12px}
+header h1{margin:0 0 8px;font-size:1.7rem;font-weight:400}
+header p{margin:0;color:var(--mut);font-size:.9rem}
+.req{color:var(--er);margin-left:3px}
+.q{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:12px}
+.t{display:block;font-weight:600;margin-bottom:10px}
+.n{color:var(--ac);margin-right:6px}
+.fld{margin-bottom:14px}.fld:last-child{margin-bottom:0}
+.opt{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--bd);border-radius:10px;margin-bottom:6px;cursor:pointer}
+.opt input{accent-color:var(--ac);width:18px;height:18px;margin:0}
+textarea,input[type=text],input[type=email],input[type=password]{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+textarea{min-height:90px;resize:vertical}
+.free{margin-top:8px}
+.other{margin-top:2px}
+.scale{display:flex;gap:6px}
+.scale label{flex:1;text-align:center;padding:10px 0;border:1px solid var(--bd);border-radius:10px;cursor:pointer}
+.scale input{display:none}
+.scale label:has(input:checked){background:var(--ac);color:#fff;border-color:var(--ac);font-weight:700}
+.ends{display:flex;justify-content:space-between;color:var(--mut);font-size:.8rem;margin-top:4px}
+button.send,.btn{padding:12px 20px;border:0;border-radius:8px;background:var(--ac);color:#fff;font:600 1rem inherit;cursor:pointer}
+button.send{width:100%}
+button:disabled{opacity:.5}
+.btn.alt{background:var(--card);color:var(--tx);border:1px solid var(--bd)}
+.msg{padding:12px 14px;border-radius:10px;margin:12px 0;background:var(--card);border:1px solid var(--bd)}
+.ok{color:var(--ok);font-weight:600}.err{color:var(--er)}
+.hint{color:var(--mut);font-size:.82rem;text-align:center}
+.admin{text-align:center;margin-top:28px}
+.admin a{color:var(--mut);font-size:.8rem;cursor:pointer;text-decoration:underline}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap}
+.scroll{overflow-x:auto;background:var(--card);border:1px solid var(--bd);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:.85rem}
+th,td{border-bottom:1px solid var(--bd);padding:8px 10px;text-align:left;vertical-align:top;min-width:120px}
+th{position:sticky;top:0;background:var(--card)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+
+<!-- ===== VISTA ENCUESTA ===== -->
+<div id="vForm">
+  <header>
+    <h1>Encuesta Tip Top</h1>
+    <p>Cuéntanos qué piensas de la marca. Son 11 preguntas, tarda unos 4 minutos y puedes escribir con total libertad. <span class="req" style="margin:0">*</span> Obligatorio</p>
+  </header>
+  <div id="form"></div>
+  <div class="admin"><a id="goAdmin">Acceso administrador</a></div>
+</div>
+
+<!-- ===== VISTA ADMIN ===== -->
+<div id="vLogin" hidden>
+  <header><h1>Resultados</h1><p>Escribe la contraseña para ver las respuestas.</p></header>
+  <div class="q">
+    <input type="password" id="pass" placeholder="Contraseña" autocomplete="current-password">
+    <div class="msg err" id="loginErr" hidden></div>
+    <div class="row" style="margin:12px 0 0">
+      <button class="btn alt" id="backForm">Volver</button>
+      <button class="btn" id="login">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="vRes" hidden>
+  <div class="row">
+    <strong id="count"></strong>
+    <span>
+      <button class="btn alt" id="refresh">Actualizar</button>
+      <button class="btn" id="dl">Descargar CSV</button>
+      <button class="btn alt" id="logout">Salir</button>
+    </span>
+  </div>
+  <div class="scroll"><table id="tbl"></table></div>
+</div>
+
+</div>
+
+<script>
+// ▼▼▼ PEGA AQUÍ LA URL DE TU APLICACIÓN WEB DE APPS SCRIPT ▼▼▼
+const SCRIPT_URL = "PEGA_AQUI_LA_URL_DE_APPS_SCRIPT";
+// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
+const Q=[
+ {id:"conoce",t:"¿Conoces la marca Tip Top?",type:"radio",o:["Sí, la conozco bien","Sí, he oído de ella","No la conozco"]},
+ {id:"primera_marca",t:"¿Cuál es la primera marca de comida rápida que recuerdas?",type:"text",ph:"Escribe la marca que se te viene a la mente primero"},
+ {id:"consumido",t:"¿Has consumido productos de Tip Top?",type:"radio",o:["Sí","Alguna vez","No"]},
+ {id:"frecuencia",t:"¿Con qué frecuencia consumes productos de Tip Top?",type:"radio",o:["Varias veces por semana","Una vez por semana","Una o dos veces al mes","Casi nunca","Nunca"]},
+ {id:"percepcion",t:"¿Qué imagen o percepción tienes de la marca?",type:"area",ph:"Escribe lo que piensas, sin filtro: lo bueno, lo malo, lo que sientes…"},
+ {id:"redes",t:"¿En qué redes sociales pasas más tiempo?",type:"check",o:["Instagram","TikTok","Facebook","WhatsApp","YouTube","X (Twitter)","Ninguna"],other:true},
+ {id:"vio_contenido",t:"¿Has visto contenido de Tip Top en Instagram o TikTok recientemente?",type:"radio",o:["Sí, en Instagram","Sí, en TikTok","Sí, en ambas","No","No recuerdo"],free:"Si quieres, cuéntanos qué viste o dónde"},
+ {id:"contenido_deseado",t:"¿Qué tipo de contenido te gustaría ver de Tip Top?",type:"check",o:["Promociones y descuentos","Videos divertidos / trends","Detrás de cámaras","Retos y concursos","Recetas o formas de combinar el menú","Reseñas de clientes","Influencers / creadores"],other:true,free:"Cuéntanos tu idea ideal de contenido"},
+ {id:"factor",t:"¿Qué factor influye más en tu decisión de comprar comida rápida?",type:"radio",o:["Precio","Sabor","Rapidez","Promociones","Cercanía / ubicación","Calidad e higiene","Recomendaciones de amigos / redes"],other:true},
+ {id:"interes",t:"¿Qué tan interesado estarías en interactuar con contenido de Tip Top en redes sociales?",type:"scale",lo:"Nada interesado",hi:"Muy interesado"},
+ {id:"recomendacion",t:"¿Qué recomendarías a Tip Top para conectar mejor con los jóvenes?",type:"area",ph:"Todas las ideas valen: productos, publicidad, precios, atención, redes…"},
+ {id:"extra",t:"¿Algo más que quieras decirnos? (opcional)",type:"area",ph:"Libre expresión"}
+];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const show=v=>{["vForm","vLogin","vRes"].forEach(i=>$("#"+i).hidden=i!==v);$("#wrap").classList.toggle("wide",v==="vRes")};
+
+async function api(payload){
+  // text/plain evita la verificación previa (preflight) de CORS con Apps Script
+  const r=await fetch(SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});
+  return r.json();
+}
+
+/* ---------- Encuesta ---------- */
+function render(){
+ let h=`<div class="q"><div class="fld"><span class="t">Nombre<span class="req">*</span></span><input type="text" id="nombre" placeholder="Tu nombre" autocomplete="name"></div><div class="fld"><span class="t">Correo electrónico<span class="req">*</span></span><input type="email" id="email" placeholder="tucorreo@ejemplo.com" autocomplete="email"></div></div>`;
+ Q.forEach((q,i)=>{
+  h+=`<div class="q" data-id="${q.id}"><span class="t"><span class="n">${i+1}.</span>${esc(q.t)}</span>`;
+  if(q.type==="radio"||q.type==="check"){
+   const ty=q.type==="radio"?"radio":"checkbox";
+   q.o.forEach(o=>h+=`<label class="opt"><input type="${ty}" name="${q.id}" value="${esc(o)}"> ${esc(o)}</label>`);
+   if(q.other)h+=`<input type="text" class="other" placeholder="Otro (escríbelo aquí)">`;
+   if(q.free)h+=`<div class="free"><textarea class="freetxt" placeholder="${esc(q.free)}"></textarea></div>`;
+  }else if(q.type==="text"){h+=`<input type="text" class="val" placeholder="${esc(q.ph)}">`}
+  else if(q.type==="area"){h+=`<textarea class="val" placeholder="${esc(q.ph)}"></textarea>`}
+  else if(q.type==="scale"){
+   h+=`<div class="scale">`+[1,2,3,4,5].map(n=>`<label><input type="radio" name="${q.id}" value="${n}"><span>${n}</span></label>`).join("")+`</div><div class="ends"><span>${q.lo}</span><span>${q.hi}</span></div>`;
+  }
+  h+=`</div>`;
+ });
+ h+=`<div class="msg" id="status" hidden></div><button class="send" id="send">Enviar</button><p class="hint">Puedes dejar en blanco lo que no quieras contestar.</p>`;
+ $("#form").innerHTML=h;
+ $("#send").onclick=submit;
+}
+function collect(){
+ const r={nombre:$("#nombre").value.trim(),email:$("#email").value.trim()};
+ Q.forEach(q=>{
+  const el=document.querySelector(`.q[data-id="${q.id}"]`);
+  if(q.type==="text"||q.type==="area"){r[q.id]=el.querySelector(".val").value.trim();return}
+  if(q.type==="radio"||q.type==="scale"){const c=el.querySelector("input:checked");r[q.id]=c?c.value:""}
+  else{r[q.id]=[...el.querySelectorAll("input:checked")].map(x=>x.value)}
+  const ot=el.querySelector(".other");if(ot)r[q.id+"_otro"]=ot.value.trim();
+  const ft=el.querySelector(".freetxt");if(ft)r[q.id+"_comentario"]=ft.value.trim();
+ });
+ return r;
+}
+function status(t,cls){const s=$("#status");s.hidden=false;s.className="msg "+(cls||"");s.textContent=t}
+async function submit(){
+ const data=collect();
+ if(!data.nombre){status("Escribe tu nombre.","err");$("#nombre").focus();return}
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)){status("Escribe un correo electrónico válido.","err");$("#email").focus();return}
+ $("#send").disabled=true;
+ try{
+  const res=await api({action:"submit",data});
+  if(!res.ok)throw 0;
+  $("#form").innerHTML=`<div class="q"><p class="ok" style="font-size:1.2rem;margin-top:0">¡Gracias por responder!</p><p>Tus respuestas ya quedaron guardadas. Tu opinión ayuda a Tip Top a conectar mejor con los jóvenes.</p></div>`;
+  window.scrollTo(0,0);
+ }catch(e){
+  $("#send").disabled=false;
+  status("No se pudo guardar. Revisa tu conexión e intenta de nuevo.","err");
+ }
+}
+
+/* ---------- Administrador ---------- */
+let adminPass="",data=null;
+$("#goAdmin").onclick=()=>{show("vLogin");$("#pass").focus()};
+$("#backForm").onclick=()=>show("vForm");
+$("#pass").addEventListener("keydown",e=>{if(e.key==="Enter")$("#login").click()});
+async function load(){
+ const res=await api({action:"results",password:adminPass});
+ if(!res.ok)throw new Error(res.error||"Error");
+ data=res;
+ $("#count").textContent=res.rows.length+" respuestas";
+ const head="<tr>"+res.headers.map(h=>`<th>${esc(h.replace(/_/g," "))}</th>`).join("")+"</tr>";
+ const body=res.rows.slice().reverse().map(r=>"<tr>"+r.map(c=>`<td>${esc(c)}</td>`).join("")+"</tr>").join("");
+ $("#tbl").innerHTML=head+body;
+}
+$("#login").onclick=async()=>{
+ const b=$("#login");adminPass=$("#pass").value;$("#loginErr").hidden=true;b.disabled=true;
+ try{await load();show("vRes")}
+ catch(e){$("#loginErr").hidden=false;$("#loginErr").textContent=e.message==="Contraseña incorrecta"?"Contraseña incorrecta.":"No se pudo conectar. Intenta de nuevo."}
+ b.disabled=false;
+};
+$("#refresh").onclick=()=>load().catch(()=>{});
+$("#logout").onclick=()=>{adminPass="";data=null;$("#pass").value="";$("#tbl").innerHTML="";show("vForm")};
+$("#dl").onclick=()=>{
+ if(!data)return;
+ const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+ const csv="\ufeff"+[data.headers,...data.rows].map(r=>r.map(q).join(",")).join("\n");
+ const a=document.createElement("a");
+ a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+ a.download="respuestas-tip-top.csv";a.click();URL.revokeObjectURL(a.href);
+};
+
+render();
+</script>
+</body>
+</html>
